@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from '@/components/shared/page-header';
@@ -11,6 +12,7 @@ import type { DateRange } from "react-day-picker";
 import { useState } from 'react';
 import { addDays, format } from 'date-fns';
 import Image from 'next/image';
+import { Button } from '@/components/ui/button';
 
 const campaignPerformanceData: AnalyticsData[] = [
   { date: 'Jan', value: 28, category: 'Campaign A' }, { date: 'Jan', value: 35, category: 'Campaign B' },
@@ -197,3 +199,4 @@ export default function AnalyticsContent() {
     </div>
   );
 }
+
