@@ -4,8 +4,9 @@ import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import type { MetricCardProps, Segment } from '@/lib/types';
-import { Users, TrendingUp, MailOpen, Target, DollarSign, ArrowUpCircle, ArrowDownCircle, Activity } from 'lucide-react';
+import { Users, TrendingUp, MailOpen, Target, DollarSign, ArrowUpCircle, ArrowDownCircle, Activity, BarChart2 } from 'lucide-react';
 import Image from 'next/image';
+import { Button } from '@/components/ui/button';
 
 const MetricCard = ({ title, value, icon: Icon, trend, trendDirection }: MetricCardProps) => (
   <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
