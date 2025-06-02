@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { SubmitHandler } from 'react-hook-form';
@@ -12,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { SegmentSchema, type SegmentFormValues } from '@/lib/schemas';
 import type { Segment } from '@/lib/types';
 import { useState } from 'react';
-import { PlusCircle, Edit3, Trash2, Users, BarChartHorizontalBig, ShoppingBag } from 'lucide-react';
+import { PlusCircle, Edit3, Trash2, Users, BarChartHorizontalBig, ShoppingBag, SearchCheck } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ import {
   DialogClose
 } from "@/components/ui/dialog";
 import { toast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 const mockSegments: Segment[] = [
   { id: '1', name: 'High Engagement Users', description: 'Users who frequently open emails and click links.', customerCount: 1250, criteria: { demographics: 'Age 25-45', purchaseHistory: '>= 3 purchases', engagementBehavior: 'Opened 5+ emails in last 30 days' } },
@@ -37,6 +39,7 @@ export default function SegmentsContent() {
   const [segments, setSegments] = useState<Segment[]>(mockSegments);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSegment, setEditingSegment] = useState<Segment | null>(null);
+  const router = useRouter();
 
   const form = useForm<SegmentFormValues>({
     resolver: zodResolver(SegmentSchema),
@@ -67,6 +70,7 @@ export default function SegmentsContent() {
     form.reset();
     setIsFormOpen(false);
     setEditingSegment(null);
+    router.push('/campaigns');
   };
 
   const handleEdit = (segment: Segment) => {
@@ -94,6 +98,15 @@ export default function SegmentsContent() {
     setIsFormOpen(true);
   }
 
+  const handlePreviewAudience = () => {
+    // In a real app, you'd query based on criteria. Here, it's a mock.
+    const mockSize = Math.floor(Math.random() * 1800) + 50; // Random size between 50 and 1850
+    toast({
+      title: "Audience Preview",
+      description: `Estimated audience size based on current criteria: ~${mockSize} customers.`,
+    });
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader title="Customer Segments" description="Create and manage your customer segments.">
@@ -111,7 +124,7 @@ export default function SegmentsContent() {
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
               <FormField
                 control={form.control}
                 name="name"
@@ -141,7 +154,12 @@ export default function SegmentsContent() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg font-headline">Criteria</CardTitle>
-                  <CardDescription>Define rules for this segment. Use plain language.</CardDescription>
+                  <CardDescription>
+                    Define rules for this segment. Use plain language and combine conditions with AND/OR. <br />
+                    E.g., for Demographics: 'Age &gt; 30 AND City is New York'. <br />
+                    For Purchase History: 'Total spend &gt; 10000 INR AND visits &lt; 3'. <br />
+                    For Engagement: 'Inactive for 90 days OR last_email_open &gt; 60 days ago'.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -185,12 +203,16 @@ export default function SegmentsContent() {
                   />
                 </CardContent>
               </Card>
-              <DialogFooter>
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button type="button" variant="outline" onClick={handlePreviewAudience}>
+                  <SearchCheck className="mr-2 h-4 w-4" /> Preview Audience
+                </Button>
+                <div className="flex-grow sm:flex-grow-0" />
                 <DialogClose asChild>
                   <Button type="button" variant="outline">Cancel</Button>
                 </DialogClose>
                 <Button type="submit">
-                  {editingSegment ? 'Save Changes' : 'Create Segment'}
+                  {editingSegment ? 'Save Changes & View Campaigns' : 'Create Segment & View Campaigns'}
                 </Button>
               </DialogFooter>
             </form>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { SubmitHandler } from 'react-hook-form';
@@ -13,10 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CampaignSchema, type CampaignFormValues } from '@/lib/schemas';
 import type { Campaign, Segment } from '@/lib/types';
 import { useState, useEffect } from 'react';
-import { PlusCircle, Edit3, Trash2, Send, Mail, Sparkles, CalendarIcon, Eye } from 'lucide-react';
+import { PlusCircle, Edit3, Trash2, Send, Mail, Sparkles, CalendarIcon, Eye, Users, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -32,11 +33,12 @@ import CampaignOptimizerForm from './campaign-optimizer-form';
 import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 
-const mockCampaigns: Campaign[] = [
-  { id: '1', name: 'Summer Kick-off Sale', subject: "☀️ Summer Deals Are Here!", targetSegmentId: '1', targetSegmentName: 'High Engagement Users', status: 'Sent', sentDate: '2024-06-15', createdDate: '2024-06-10', openRate: 35.2, clickRate: 8.1 },
-  { id: '2', name: 'New User Welcome', subject: "Welcome to ClientPulse!", targetSegmentId: '2', targetSegmentName: 'Recent Signups', status: 'Scheduled', sentDate: '2024-07-25', createdDate: '2024-07-10', },
-  { id: '3', name: 'Re-engagement Offer', subject: "We Miss You! Here's 15% Off", targetSegmentId: '3', targetSegmentName: 'Potential Churn', status: 'Draft', createdDate: '2024-07-18', },
-  { id: '4', name: 'VIP Exclusive Preview', subject: "VIPs: Early Access to New Arrivals", targetSegmentId: '4', targetSegmentName: 'Loyal Spenders', status: 'Sent', sentDate: '2024-07-01', createdDate: '2024-06-25', openRate: 55.8, clickRate: 15.3 },
+const mockCampaignsData: Campaign[] = [
+  { id: '1', name: 'Summer Kick-off Sale', subject: "☀️ Summer Deals Are Here!", targetSegmentId: '1', targetSegmentName: 'High Engagement Users', status: 'Sent', sentDate: '2024-06-15', createdDate: '2024-06-10', openRate: 35.2, clickRate: 8.1, audienceSize: 1250, sentCount: 1245, failedCount: 5 },
+  { id: '2', name: 'New User Welcome', subject: "Welcome to ClientPulse!", targetSegmentId: '2', targetSegmentName: 'Recent Signups', status: 'Scheduled', sentDate: '2024-07-25', createdDate: '2024-07-10', audienceSize: 300, sentCount: 0, failedCount: 0 },
+  { id: '3', name: 'Re-engagement Offer', subject: "We Miss You! Here's 15% Off", targetSegmentId: '3', targetSegmentName: 'Potential Churn', status: 'Draft', createdDate: '2024-07-18', audienceSize: 150 },
+  { id: '4', name: 'VIP Exclusive Preview', subject: "VIPs: Early Access to New Arrivals", targetSegmentId: '4', targetSegmentName: 'Loyal Spenders', status: 'Sent', sentDate: '2024-07-01', createdDate: '2024-06-25', openRate: 55.8, clickRate: 15.3, audienceSize: 420, sentCount: 418, failedCount: 2 },
+  { id: '5', name: 'Holiday Special Early Bird', subject: "🎄 Early Access to Holiday Deals!", targetSegmentId: '1', targetSegmentName: 'High Engagement Users', status: 'Draft', createdDate: '2024-07-22', audienceSize: 1250 },
 ];
 
 const mockSegments: Pick<Segment, 'id' | 'name'>[] = [
@@ -48,9 +50,9 @@ const mockSegments: Pick<Segment, 'id' | 'name'>[] = [
 
 const getStatusBadgeVariant = (status: Campaign['status']) => {
   switch (status) {
-    case 'Sent': return 'default'; // bg-primary
-    case 'Scheduled': return 'secondary'; // bg-secondary
-    case 'Draft': return 'outline'; // text-foreground
+    case 'Sent': return 'default';
+    case 'Scheduled': return 'secondary';
+    case 'Draft': return 'outline';
     case 'Archived': return 'destructive';
     default: return 'default';
   }
@@ -58,11 +60,18 @@ const getStatusBadgeVariant = (status: Campaign['status']) => {
 
 
 export default function CampaignsContent() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [showOptimizer, setShowOptimizer] = useState(false);
   const [optimizerInitialData, setOptimizerInitialData] = useState<Partial<CampaignFormValues>>({});
+
+  useEffect(() => {
+    const sortedCampaigns = [...mockCampaignsData].sort((a, b) => 
+      parseISO(b.createdDate).getTime() - parseISO(a.createdDate).getTime()
+    );
+    setCampaigns(sortedCampaigns);
+  }, []);
 
   const form = useForm<CampaignFormValues>({
     resolver: zodResolver(CampaignSchema),
@@ -77,8 +86,17 @@ export default function CampaignsContent() {
 
   const onSubmit: SubmitHandler<CampaignFormValues> = (data) => {
     const segment = mockSegments.find(s => s.id === data.targetSegmentId);
+    let updatedCampaigns;
     if (editingCampaign) {
-      setCampaigns(campaigns.map(c => c.id === editingCampaign.id ? { ...editingCampaign, ...data, targetSegmentName: segment?.name, status: editingCampaign.status === 'Draft' && data.sendDate ? 'Scheduled' : editingCampaign.status, createdDate: editingCampaign.createdDate, sentDate: data.sendDate ? format(data.sendDate, 'yyyy-MM-dd') : undefined } : c));
+      const campaignToUpdate: Campaign = { 
+        ...editingCampaign, 
+        ...data, 
+        targetSegmentName: segment?.name, 
+        status: editingCampaign.status === 'Draft' && data.sendDate ? 'Scheduled' : editingCampaign.status, 
+        sentDate: data.sendDate ? format(data.sendDate, 'yyyy-MM-dd') : undefined,
+        audienceSize: editingCampaign.audienceSize || segment ? (mockSegments.find(s => s.id === segment?.id)?.name === 'Recent Signups' ? 300 : Math.floor(Math.random() * 1000) + 200) : undefined, // Mock audience size
+      };
+      updatedCampaigns = campaigns.map(c => c.id === editingCampaign.id ? campaignToUpdate : c);
       toast({ title: "Campaign Updated", description: `Campaign "${data.name}" has been successfully updated.` });
     } else {
       const newCampaign: Campaign = {
@@ -88,10 +106,15 @@ export default function CampaignsContent() {
         status: data.sendDate ? 'Scheduled' : 'Draft',
         createdDate: format(new Date(), 'yyyy-MM-dd'),
         sentDate: data.sendDate ? format(data.sendDate, 'yyyy-MM-dd') : undefined,
+        audienceSize: segment ? (mockSegments.find(s => s.id === segment?.id)?.name === 'Recent Signups' ? 300 : Math.floor(Math.random() * 1000) + 200) : undefined, // Mock audience size
+        sentCount: 0, // Initial values for new campaign
+        failedCount: 0,
       };
-      setCampaigns([newCampaign, ...campaigns]);
+      updatedCampaigns = [newCampaign, ...campaigns];
       toast({ title: "Campaign Created", description: `Campaign "${data.name}" has been successfully created.` });
     }
+    
+    setCampaigns(updatedCampaigns.sort((a, b) => parseISO(b.createdDate).getTime() - parseISO(a.createdDate).getTime()));
     form.reset();
     setIsFormOpen(false);
     setEditingCampaign(null);
@@ -103,16 +126,16 @@ export default function CampaignsContent() {
       name: campaign.name,
       subject: campaign.subject,
       targetSegmentId: campaign.targetSegmentId,
-      // emailContent is not typically stored in list view, placeholder for actual fetch
       emailContent: `This is a placeholder for the email content of campaign: ${campaign.name}. Please replace with actual content if editing.`, 
-      sendDate: campaign.sentDate ? new Date(campaign.sentDate) : undefined,
+      sendDate: campaign.sentDate ? parseISO(campaign.sentDate) : undefined,
     });
     setIsFormOpen(true);
   };
 
   const handleDelete = (campaignId: string) => {
-    setCampaigns(campaigns.filter(c => c.id !== campaignId));
-     toast({ title: "Campaign Deleted", description: "The campaign has been deleted.", variant: "destructive" });
+    const updatedCampaigns = campaigns.filter(c => c.id !== campaignId);
+    setCampaigns(updatedCampaigns.sort((a, b) => parseISO(b.createdDate).getTime() - parseISO(a.createdDate).getTime()));
+    toast({ title: "Campaign Deleted", description: "The campaign has been deleted.", variant: "destructive" });
   };
 
   const openCreateForm = () => {
@@ -124,8 +147,6 @@ export default function CampaignsContent() {
   const openOptimizerForCampaign = (campaign: Campaign) => {
     setOptimizerInitialData({
       emailContent: `Subject: ${campaign.subject}\n\nBody: [Placeholder for campaign ${campaign.name} body content. Assuming it's fetched or available.]`,
-      // campaignData would ideally be dynamically fetched or pre-filled based on context
-      // For demo, it will be empty and user needs to fill it.
     });
     setShowOptimizer(true);
   }
@@ -133,7 +154,7 @@ export default function CampaignsContent() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Campaign Management" description="Design, schedule, and send personalized campaigns.">
+      <PageHeader title="Campaign History & Management" description="Review past campaigns, manage active ones, and create new marketing initiatives.">
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowOptimizer(true)}>
             <Sparkles className="mr-2 h-4 w-4" /> AI Optimizer
@@ -247,7 +268,7 @@ export default function CampaignsContent() {
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          disabled={(date) => date < new Date(new Date().setHours(0,0,0,0)) } // Disable past dates
+                          disabled={(date) => date < new Date(new Date().setHours(0,0,0,0)) }
                           initialFocus
                         />
                       </PopoverContent>
@@ -278,7 +299,6 @@ export default function CampaignsContent() {
               }}
               onOptimized={(output) => {
                 toast({ title: "Optimization Complete!", description: "Suggestions ready. Consider applying them to your campaign."});
-                // Potentially auto-fill parts of the campaign form if it's open, or store suggestions.
               }}
             />
         </DialogContent>
@@ -309,12 +329,32 @@ export default function CampaignsContent() {
                 </div>
                 <CardDescription className="text-sm">Subject: {campaign.subject}</CardDescription>
               </CardHeader>
-              <CardContent className="text-sm text-muted-foreground space-y-1">
+              <CardContent className="text-sm text-muted-foreground space-y-2">
                 <p>Target: {campaign.targetSegmentName || campaign.targetSegmentId}</p>
-                <p>Created: {format(new Date(campaign.createdDate), 'PP')}</p>
-                {campaign.sentDate && <p>{campaign.status === 'Scheduled' ? 'Scheduled for' : 'Sent on'}: {format(new Date(campaign.sentDate), 'PP')}</p>}
+                <p>Created: {format(parseISO(campaign.createdDate), 'PP')}</p>
+                {campaign.sentDate && <p>{campaign.status === 'Scheduled' ? 'Scheduled for' : 'Sent on'}: {format(parseISO(campaign.sentDate), 'PP')}</p>}
+                
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 text-xs">
+                  <div className="flex items-center">
+                    <Users className="mr-1.5 h-3.5 w-3.5 text-primary/80" />
+                    Audience: <strong>{campaign.audienceSize?.toLocaleString() ?? 'N/A'}</strong>
+                  </div>
+                  {campaign.status === 'Sent' && campaign.sentCount !== undefined && (
+                    <div className="flex items-center">
+                      <CheckCircle2 className="mr-1.5 h-3.5 w-3.5 text-green-600" />
+                      Sent: <strong>{campaign.sentCount.toLocaleString()}</strong>
+                    </div>
+                  )}
+                  {campaign.status === 'Sent' && campaign.failedCount !== undefined && (
+                     <div className="flex items-center">
+                       <AlertTriangle className="mr-1.5 h-3.5 w-3.5 text-red-600" />
+                       Failed: <strong>{campaign.failedCount.toLocaleString()}</strong>
+                     </div>
+                  )}
+                </div>
+
                 {campaign.status === 'Sent' && (
-                  <div className="flex gap-4 pt-1">
+                  <div className="flex gap-x-4 gap-y-1 pt-1 flex-wrap text-xs">
                     <span>Open Rate: <strong>{campaign.openRate?.toFixed(1) ?? 'N/A'}%</strong></span>
                     <span>Click Rate: <strong>{campaign.clickRate?.toFixed(1) ?? 'N/A'}%</strong></span>
                   </div>

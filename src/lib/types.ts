@@ -1,3 +1,4 @@
+
 export interface User {
   id?: string;
   name?: string | null;
@@ -27,6 +28,9 @@ export interface Campaign {
   createdDate: string;
   openRate?: number;
   clickRate?: number;
+  audienceSize?: number;
+  sentCount?: number;
+  failedCount?: number;
 }
 
 export interface MetricCardProps {
