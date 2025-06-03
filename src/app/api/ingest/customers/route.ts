@@ -2,13 +2,15 @@
 // src/app/api/ingest/customers/route.ts
 import { NextResponse, type NextRequest } from 'next/server';
 import { CustomerIngestionSchema, type CustomerIngestionPayload } from '@/lib/schemas';
+import { db } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 /**
  * @swagger
  * /api/ingest/customers:
  *   post:
  *     summary: Ingest customer data
- *     description: Accepts customer data, validates it, and (currently) returns a success message.
+ *     description: Accepts customer data, validates it, saves it to Firestore, and returns a success message.
  *     requestBody:
  *       required: true
  *       content:
@@ -17,7 +19,7 @@ import { CustomerIngestionSchema, type CustomerIngestionPayload } from '@/lib/sc
  *             $ref: '#/components/schemas/CustomerIngestionPayload'
  *     responses:
  *       200:
- *         description: Customer data received successfully.
+ *         description: Customer data received and saved successfully.
  *         content:
  *           application/json:
  *             schema:
@@ -25,33 +27,20 @@ import { CustomerIngestionSchema, type CustomerIngestionPayload } from '@/lib/sc
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Customer data received for customer ID your_customer_id.
+ *                   example: Customer data received and saved for customer ID your_customer_id.
  *                 data:
  *                   $ref: '#/components/schemas/CustomerIngestionPayload'
  *       400:
  *         description: Invalid request payload.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Invalid request payload.
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: object
  *       401:
- *         description: Unauthorized.
+ *         description: Unauthorized (if applicable at environment level).
  *       500:
- *         description: Internal server error.
+ *         description: Internal server error or database error.
  */
 export async function POST(request: NextRequest) {
   console.log('--- CUSTOMER INGESTION API /api/ingest/customers HIT ---');
   console.log('Request Method:', request.method);
   console.log('Request URL:', request.url);
-  // Logging all headers can be verbose, but useful for debugging auth issues
   const headerObject: Record<string, string> = {};
   request.headers.forEach((value, key) => {
     headerObject[key] = value;
@@ -71,17 +60,33 @@ export async function POST(request: NextRequest) {
     }
 
     const customerData: CustomerIngestionPayload = parseResult.data;
-
-    // In a real application, you would save this data to your database.
-    // For now, we'll just log it and return a success message.
     console.log('Received and validated customer data for ID:', customerData.id);
 
-    return NextResponse.json(
-        { message: `Customer data received for customer ID ${customerData.id}.`, data: customerData },
-        { status: 200 }
-    );
-  } catch (error) {
-    console.error('Error during customer data ingestion:', error);
+    // Save to Firestore
+    try {
+      // Using customerData.id as the document ID in Firestore 'customers' collection
+      const customerDocRef = doc(db, 'customers', customerData.id);
+      await setDoc(customerDocRef, customerData);
+      console.log('Customer data saved to Firestore for ID:', customerData.id);
+
+      return NextResponse.json(
+          { message: `Customer data received and saved for customer ID ${customerData.id}.`, data: customerData },
+          { status: 200 }
+      );
+    } catch (dbError) {
+      console.error('Error saving customer data to Firestore:', dbError);
+      let dbErrorMessage = 'Error saving customer data to database.';
+      // In a real app, you might want to log the specific dbError for debugging
+      // but return a more generic message to the client.
+      if (dbError instanceof Error) {
+        dbErrorMessage = `Database operation failed. Please check server logs.`;
+      }
+      console.log(`Responding with status 500 due to Firestore error: ${dbError}`);
+      return NextResponse.json({ message: dbErrorMessage }, { status: 500 });
+    }
+
+  } catch (error) { // This outer catch handles errors like request.json() failing
+    console.error('Error during customer data ingestion (before Firestore):', error);
     let errorMessage = 'Internal server error.';
     let statusCode = 500;
 
@@ -89,13 +94,10 @@ export async function POST(request: NextRequest) {
         errorMessage = 'Invalid JSON payload. Please ensure the request body is correctly formatted JSON.';
         statusCode = 400;
     } else if (error instanceof Error) {
-        // Avoid leaking sensitive error messages if not a SyntaxError
-        errorMessage = `An unexpected error occurred: ${error.message}`;
+        errorMessage = `An unexpected error occurred during request processing. Please check server logs.`;
     }
     
-    // Log the specific error that occurred before returning a generic message
     console.log(`Responding with status ${statusCode} and message: ${errorMessage}`);
-    
     return NextResponse.json({ message: errorMessage }, { status: statusCode });
   }
 }
