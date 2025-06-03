@@ -1,10 +1,11 @@
+
 'use client';
 
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import type { MetricCardProps, Segment } from '@/lib/types';
-import { Users, TrendingUp, MailOpen, Target, DollarSign, ArrowUpCircle, ArrowDownCircle, Activity, BarChart2 } from 'lucide-react';
+import { Users, TrendingUp, MailOpen, Target, DollarSign, ArrowUpCircle, ArrowDownCircle, Activity, BarChartBig } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 
@@ -45,7 +46,7 @@ const customerSegmentData = [
 const recentActivity = [
   { id: 1, description: "Campaign 'Summer Sale' launched.", time: "2 hours ago", icon: MailOpen },
   { id: 2, description: "New segment 'High Value Customers' created.", time: "1 day ago", icon: Users },
-  { id: 3, description: "Analytics report for Q2 generated.", time: "3 days ago", icon: BarChart2 },
+  { id: 3, description: "Analytics report for Q2 generated.", time: "3 days ago", icon: BarChartBig },
 ];
 
 const mockSegments: Segment[] = [
@@ -196,3 +197,4 @@ export default function DashboardContent() {
     </div>
   );
 }
+

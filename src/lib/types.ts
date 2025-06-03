@@ -28,9 +28,9 @@ export interface Campaign {
   createdDate: string;
   openRate?: number;
   clickRate?: number;
-  audienceSize?: number;
-  sentCount?: number;
-  failedCount?: number;
+  audienceSize?: number; // Added
+  sentCount?: number; // Added
+  failedCount?: number; // Added
 }
 
 export interface MetricCardProps {

@@ -36,9 +36,9 @@ import { Badge } from '@/components/ui/badge';
 const mockCampaignsData: Campaign[] = [
   { id: '1', name: 'Summer Kick-off Sale', subject: "☀️ Summer Deals Are Here!", targetSegmentId: '1', targetSegmentName: 'High Engagement Users', status: 'Sent', sentDate: '2024-06-15', createdDate: '2024-06-10', openRate: 35.2, clickRate: 8.1, audienceSize: 1250, sentCount: 1245, failedCount: 5 },
   { id: '2', name: 'New User Welcome', subject: "Welcome to ClientPulse!", targetSegmentId: '2', targetSegmentName: 'Recent Signups', status: 'Scheduled', sentDate: '2024-07-25', createdDate: '2024-07-10', audienceSize: 300, sentCount: 0, failedCount: 0 },
-  { id: '3', name: 'Re-engagement Offer', subject: "We Miss You! Here's 15% Off", targetSegmentId: '3', targetSegmentName: 'Potential Churn', status: 'Draft', createdDate: '2024-07-18', audienceSize: 150 },
+  { id: '3', name: 'Re-engagement Offer', subject: "We Miss You! Here's 15% Off", targetSegmentId: '3', targetSegmentName: 'Potential Churn', status: 'Draft', createdDate: '2024-07-18', audienceSize: 150, sentCount: 0, failedCount: 0 },
   { id: '4', name: 'VIP Exclusive Preview', subject: "VIPs: Early Access to New Arrivals", targetSegmentId: '4', targetSegmentName: 'Loyal Spenders', status: 'Sent', sentDate: '2024-07-01', createdDate: '2024-06-25', openRate: 55.8, clickRate: 15.3, audienceSize: 420, sentCount: 418, failedCount: 2 },
-  { id: '5', name: 'Holiday Special Early Bird', subject: "🎄 Early Access to Holiday Deals!", targetSegmentId: '1', targetSegmentName: 'High Engagement Users', status: 'Draft', createdDate: '2024-07-22', audienceSize: 1250 },
+  { id: '5', name: 'Holiday Special Early Bird', subject: "🎄 Early Access to Holiday Deals!", targetSegmentId: '1', targetSegmentName: 'High Engagement Users', status: 'Draft', createdDate: '2024-07-22', audienceSize: 1250, sentCount: 0, failedCount: 0 },
 ];
 
 const mockSegments: Pick<Segment, 'id' | 'name'>[] = [
